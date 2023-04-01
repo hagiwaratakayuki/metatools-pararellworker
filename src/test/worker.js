@@ -1,7 +1,6 @@
 const process = require('node:process')
 const WorkerCls = require('../worker');
 const testConsts = require('./consts');
-const { parentPort, workerData } = require('worker_threads');
 
 const worker = new WorkerCls();
 

@@ -2,7 +2,10 @@
   "name": "@metatools/pararellworker",
   "version": "1.0.0",
   "description": "utilty for worker threads",
-  "main": "index.js",
+  "exports":{
+    "import":"",
+    "require":""
+  },
   "scripts": {
     "test": "mocha src/test/spec.js"
   },

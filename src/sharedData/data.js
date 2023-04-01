@@ -77,4 +77,4 @@ class MultiCollisionFunc extends Template{
 
 }
 
-module.exports = {SingleCollisionFunc, MultiCollisionFunc}
+module.exports = {SingleCollisionFunc, MultiCollisionFunc, Template}
