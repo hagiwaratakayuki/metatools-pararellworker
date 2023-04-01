@@ -14,7 +14,7 @@
     "worker_thread",
     "utility"
   ],
-  "author": "Hagiwara TAkayuki",
+  "author": "Hagiwara Takayuki",
   "license": "MIT",
   "dependencies": {
     "mocha": "^10.2.0"
