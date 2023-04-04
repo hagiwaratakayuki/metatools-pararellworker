@@ -15,16 +15,17 @@ const cwd  = process.cwd();
 
 class Controller extends EventEmitter  {
     /**
-     * wokerpath accept string absolute path or '/' started path from app root path
-     * @param {string} workerpath 
+     * worker controller
+     * @param {string| [path:string, base:string]} workerpath when  string path from app root path. when list, path, from base path 
      * @param {number} workerNumber 
-     * @param {any} workerData;
-     * @param {any} options
+     * @param {any} workerOptions;
+     * @param {any} emitterOptions
      * @see  https://nodejs.org/api/worker_threads.html#new-workerfilename-options
+     * @see  https://nodejs.org/api/events.html#capture-rejections-of-promises
      * 
      */
-    constructor (workerpath, workerNumber, workerData, options={}) {
-        super(options);
+    constructor (workerpath, workerNumber, workerOptions={}, emitterOptions={}) {
+        super(emitterOptions);
         /**
          * @type {{number:Worker}}
          */
@@ -33,12 +34,16 @@ class Controller extends EventEmitter  {
         this._notInitCount = workerNumber;
         this._initResults = {};
         let _workerPath = workerpath;
-        if (workerpath.indexOf('/') === 0) {
+        if (typeof workerpath === 'string') {
             _workerPath = path.join(cwd,workerpath);
 
         }
+        if (Array.isArray(workerpath)) {
+            const [wP, bP] = workerpath;
+            _workerPath = path.join(bP, wP)
+        }
         for (let id = 0; id < workerNumber; id++) {
-            const worker = new Worker(_workerPath, options)
+            const worker = new Worker(_workerPath, workerOptions)
             this.workers[id] = worker;
         
             worker.on('message', this._createOnMessage(id))
@@ -47,6 +52,11 @@ class Controller extends EventEmitter  {
 
 
     }
+    /**
+     * inner function. bind event dispathcher to worker id 
+     * @param {any} id 
+     * @returns {(message:any) => void}
+     */
     _createOnMessage (id) {
 
         const func = function (message) {
@@ -63,7 +73,7 @@ class Controller extends EventEmitter  {
      * @param {number} id 
      */
     _onMessage(message, id){
-        if (message.key === CONSTS.INIT_EVENT) {
+        if (message.eventName === CONSTS.INIT_EVENT) {
             this._notInitCount -= 1;
             this._initResults[id] = message.data
             if (this._notInitCount === 0) {
@@ -74,9 +84,12 @@ class Controller extends EventEmitter  {
 
         }
 
-       this.emit(message.key, message.data, id);
+       this.emit(message.eventName, message.data, id);
     }
-
+    /**
+     * fire when all workers post initialized message 
+     * @param {(value:any, id:any)=> void} callback 
+     */
     onInit(callback) {
         this.on(CONSTS.INIT_EVENT, callback)
 
@@ -92,7 +105,7 @@ class Controller extends EventEmitter  {
         this.on(eventName, func);
     }
     /**
-     * 
+     * broadcast all workers
      * @param {string} eventName 
      * @param {any} data 
      * @param {number?} excludeId 
@@ -111,12 +124,12 @@ class Controller extends EventEmitter  {
         }
     }
     /**
-     * 
+     * message for specific worker
      * @param {number} id 
      * @param {string} eventName 
      * @param {any} data 
      */
-    message(id, eventName,data) {
+    postMessage(id, eventName,data) {
         /**
          * @type {Worker}
          */
@@ -125,6 +138,10 @@ class Controller extends EventEmitter  {
         worker.postMessage(createMessage(eventName, data))
         
     }
+    /**
+     * terminate all workers
+     * 
+     */
     terminate(){
         const proms = []
         for (const worker of Object.values(this.workers)) {

@@ -1,14 +1,14 @@
 /**
  * @typedef {Object} Message
- * @property {string} key
+ * @property {string} eventName
  * @property {any} data
  */
 /**
- * @param {string} key
+ * @param {string} eventName
  * @param {any} data
  * @returns {Message}
  */
-function createMessage (key, data) {
-    return {key, data};
+function createMessage (eventName, data) {
+    return {eventName, data};
 }
 module.exports = createMessage

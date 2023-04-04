@@ -54,7 +54,7 @@ describe('basic worker test', function () {
           
            
             controller.broadcast(testConsts.COUNTER_TRIGGER);
-            controller.message(0, testConsts.COUNTER_TRIGGER);
+            controller.postMessage(0, testConsts.COUNTER_TRIGGER);
             controller.broadcast(testConsts.COUNT_GET);
         })
 

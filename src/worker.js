@@ -19,7 +19,7 @@ class Worker extends EventEmitter {
         return workerData;
     }
     /**
-     * 
+     * report initialize process done
      * @param {any} data 
      */
     postInit(data) {
@@ -27,14 +27,14 @@ class Worker extends EventEmitter {
 
     }
     /**
-     * 
-     * @param {string} key 
+     * post message for controller 
+     * @param {string} event name of event 
      * @param {any} data 
      */
-    postMessage (key, data){
+    postMessage (event, data){
        
        
-        parentPort.postMessage(createMessage(key, data));
+        parentPort.postMessage(createMessage(event, data));
 
     }
     /**
@@ -44,7 +44,7 @@ class Worker extends EventEmitter {
     _handler(message) {
        
        
-        this.emit(message.key, message.data)
+        this.emit(message.eventName, message.data)
 
     }
    
