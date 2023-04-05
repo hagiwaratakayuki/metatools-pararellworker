@@ -6,7 +6,7 @@
 ## Install
 
 ```bash
-npm install @meatatools/parallworker
+npm install meatatools-parallworker
 ```
 
 ## Usage
@@ -30,7 +30,7 @@ controllerForRealtivePath.message('singlemessage', )
 
 ```javascript
 // worker
-import {Worker} = from '@metatools-pararellworker';
+import {Worker} = from 'metatools-pararellworker';
 
 
 worker.on('brodcast', function(message){

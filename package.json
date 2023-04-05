@@ -1,7 +1,8 @@
 {
   "name": "metatools-pararellworker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "utilty for worker threads",
+  "homepage": "https://github.com/hagiwaratakayuki/metatools-pararellworker",
   "exports": {
     "import": "./src/index.mjs",
     "require": "./src/index.cjs",
