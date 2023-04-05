@@ -1,5 +1,5 @@
 {
-  "name": "@metatools/pararellworker",
+  "name": "metatools-pararellworker",
   "version": "1.0.0",
   "description": "utilty for worker threads",
   "exports": {
@@ -16,7 +16,7 @@
   ],
   "author": "Hagiwara Takayuki",
   "license": "MIT",
-  "dependencies": {
+  "devdependencies": {
     "mocha": "^10.2.0"
   }
 }
