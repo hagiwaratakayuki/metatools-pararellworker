@@ -1,4 +1,4 @@
-# Pararellworker
+# @Metatools/Pararellworker
 
  easy to use worker threads for parallel processing. With this library, you can implement parallel processing in a straightforward manner.
 
@@ -6,7 +6,7 @@
 ## Install
 
 ```bash
-npm install @meatatools-parallworker
+npm install @meatatools/parallworker
 ```
 
 ## Usage
@@ -48,7 +48,10 @@ worker.postInit('done');
 
 ### Event System
 
-Controller and Worker is extend EventEmitter. Both post and accept message with event name.se more doc directry
+Controller and Worker is extend EventEmitter. Both post and accept message with event name.
+
+
+if want  more, see docs directry
 
    
 
