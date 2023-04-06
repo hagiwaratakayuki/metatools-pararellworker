@@ -1,6 +1,22 @@
-module.exports.Controller = require('./controller')
-module.exports.Worker = require('./worker');
-module.exports.SharedData = require('./sharedData/data');
-module.exports.SharedData.funcs = require('./sharedData/funcs/overwrite')
+/**
+ * @typedef {import("./controller.js")} Controller
+ * @typedef {import("./worker.js")} Worker
+ * @typedef {import("./sharedData")} SharedData
+ */
+
+/**
+ * @type {Controller}
+ */
+const Controller = require('./controller')
+/**
+ * @type {this.Worker}
+ */
+const Worker = require('./worker');
+
+/**
+ * @type {SharedData}
+ */
+const SharedData = require('./sharedData/data');
 
 
+module.exports = {Controller, Worker, SharedData}
