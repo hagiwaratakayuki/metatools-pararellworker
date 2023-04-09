@@ -1,6 +1,6 @@
 {
   "name": "metatools-pararellworker",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "utilty for worker threads",
   "homepage": "https://github.com/hagiwaratakayuki/metatools-pararellworker",
   "exports": {
@@ -15,6 +15,7 @@
     "worker_thread",
     "utility"
   ],
+  "main": "./src/index.cjsindex",
   "author": "Hagiwara Takayuki",
   "license": "MIT",
   "devdependencies": {

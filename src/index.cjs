@@ -9,7 +9,7 @@
  */
 const Controller = require('./controller')
 /**
- * @type {this.Worker}
+ * @type {Worker}
  */
 const Worker = require('./worker');
 
