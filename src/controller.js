@@ -8,7 +8,7 @@ const CONSTS = require('./consts')
 
 
 const cwd = process.cwd()
-path.resolve
+
 /**
  * @typedef {import('./message').Message} Message
  */
@@ -16,7 +16,7 @@ path.resolve
 class Controller extends EventEmitter {
     /**
      * worker controller
-     * @param {string| [path:string, base:string]} workerpath when  string path from app root path. when list, path, from base path 
+     * @param {string | {worker:string, base:string}} workerpath when  string path from app root path. when list, path, from base path 
      * @param {number} workerNumber 
      * @param {any} workerOptions
      * @param {any} emitterOptions
@@ -34,13 +34,13 @@ class Controller extends EventEmitter {
         this._notInitCount = workerNumber
         this._initResults = {}
         let _workerPath
-        if (typeof workerpath === 'string') {
+        if (typeof workerpath === 'string' || workerpath instanceof String) {
             _workerPath = path.join(cwd, workerpath)
 
         }
-        if (Array.isArray(workerpath)) {
-            const [wP, bP] = workerpath
-            _workerPath = path.join(bP, wP)
+        else {
+
+            _workerPath = path.join(workerpath.base, workerpath.worker)
         }
         for (let id = 0; id < workerNumber; id++) {
             const worker = new Worker(_workerPath, workerOptions)
@@ -95,6 +95,7 @@ class Controller extends EventEmitter {
 
     }
     createShareEvent(eventName, shareFunc) {
+
         const func = function (message, id) {
             const shareData = shareFunc(message, id)
             this.broadcast(eventName, shareData)
