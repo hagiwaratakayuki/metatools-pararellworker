@@ -1,24 +1,24 @@
 
 class Template {
     constructor() {
-        this._datas = {};
+        this._datas = {}
     }
     toJSON() {
-        return this._datas;
+        return this._datas
     }
     get(key) {
-        return this._datas[key];
+        return this._datas[key]
     }
 
     set(key, value) {
-        const func = this._getCollisionFunc(key);
+        const func = this._getCollisionFunc(key)
         this._datas[key] = func(value, this._datas[key])
 
 
     }
     setMulti(keyValues) {
         for (const [key, value] of Object.entries(keyValues)) {
-            this.set(key, value);
+            this.set(key, value)
         }
 
     }
@@ -30,7 +30,7 @@ class Template {
 }
 class SingleCollisionFunc extends Template {
     constructor(collisionFunc) {
-        super();
+        super()
         if (collisionFunc) {
             this.setCollisionFunc(collisionFunc)
 
@@ -40,7 +40,7 @@ class SingleCollisionFunc extends Template {
 
     }
     _getCollisionFunc() {
-        return this._collisionFunc;
+        return this._collisionFunc
     }
     setCollisionFunc(collisionFunc) {
         this._collisionFunc = collisionFunc
@@ -51,13 +51,13 @@ class MultiCollisionFunc extends Template {
     constructor(collisionMap) {
 
         super()
-        this.setCollisionMap({} || collisionMap);
+        this.setCollisionMap({} || collisionMap)
 
 
     }
     setCollisionMap(collisionMap) {
         for (const [key, func] of Object.entries(collisionMap)) {
-            this.setCollisionFunc(key, func);
+            this.setCollisionFunc(key, func)
         }
 
     }
@@ -66,7 +66,7 @@ class MultiCollisionFunc extends Template {
     }
     _getCollisionFunc(key) {
         if (key in this._collisionMap) {
-            return this.collisionMap[key];
+            return this.collisionMap[key]
 
         }
         throw new Error("no collisuon func")

@@ -8,7 +8,7 @@
  * @param {any} data
  * @returns {Message}
  */
-function createMessage (eventName, data) {
-    return {eventName, data};
+function createMessage(eventName, data) {
+    return { eventName, data }
 }
 module.exports = createMessage

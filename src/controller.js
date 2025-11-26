@@ -1,53 +1,53 @@
 const { Worker } = require('worker_threads')
-const path = require('node:path');
+const path = require('node:path')
 const process = require('node:process')
 const { EventEmitter } = require('node:events')
-const createMessage = require('./message');
+const createMessage = require('./message')
 
-const CONSTS = require('./consts');
+const CONSTS = require('./consts')
 
 
-const cwd  = process.cwd();
-
+const cwd = process.cwd()
+path.resolve
 /**
  * @typedef {import('./message').Message} Message
  */
 
-class Controller extends EventEmitter  {
+class Controller extends EventEmitter {
     /**
      * worker controller
      * @param {string| [path:string, base:string]} workerpath when  string path from app root path. when list, path, from base path 
      * @param {number} workerNumber 
-     * @param {any} workerOptions;
+     * @param {any} workerOptions
      * @param {any} emitterOptions
      * @see  https://nodejs.org/api/worker_threads.html#new-workerfilename-options
      * @see  https://nodejs.org/api/events.html#capture-rejections-of-promises
      * 
      */
-    constructor (workerpath, workerNumber, workerOptions={}, emitterOptions={}) {
-        super(emitterOptions);
+    constructor(workerpath, workerNumber, workerOptions = {}, emitterOptions = {}) {
+        super(emitterOptions)
         /**
          * @type {{number:Worker}}
          */
-        this.workers = {};
-        this.workerNumber = workerNumber;
-        this._notInitCount = workerNumber;
-        this._initResults = {};
-        let _workerPath = workerpath;
+        this.workers = {}
+        this.workerNumber = workerNumber
+        this._notInitCount = workerNumber
+        this._initResults = {}
+        let _workerPath
         if (typeof workerpath === 'string') {
-            _workerPath = path.join(cwd,workerpath);
+            _workerPath = path.join(cwd, workerpath)
 
         }
         if (Array.isArray(workerpath)) {
-            const [wP, bP] = workerpath;
+            const [wP, bP] = workerpath
             _workerPath = path.join(bP, wP)
         }
         for (let id = 0; id < workerNumber; id++) {
             const worker = new Worker(_workerPath, workerOptions)
-            this.workers[id] = worker;
-        
+            this.workers[id] = worker
+
             worker.on('message', this._createOnMessage(id))
-            
+
         }
 
 
@@ -57,14 +57,14 @@ class Controller extends EventEmitter  {
      * @param {any} id 
      * @returns {(message:any) => void}
      */
-    _createOnMessage (id) {
+    _createOnMessage(id) {
 
         const func = function (message) {
-            this._onMessage(message, id);
+            this._onMessage(message, id)
 
         }
-        
-        return func.bind(this);
+
+        return func.bind(this)
 
     }
     /**
@@ -72,19 +72,19 @@ class Controller extends EventEmitter  {
      * @param {Message} message 
      * @param {number} id 
      */
-    _onMessage(message, id){
+    _onMessage(message, id) {
         if (message.eventName === CONSTS.INIT_EVENT) {
-            this._notInitCount -= 1;
+            this._notInitCount -= 1
             this._initResults[id] = message.data
             if (this._notInitCount === 0) {
-                this.emit(CONSTS.INIT_EVENT,this._initResults);
+                this.emit(CONSTS.INIT_EVENT, this._initResults)
 
             }
-            return;
+            return
 
         }
 
-       this.emit(message.eventName, message.data, id);
+        this.emit(message.eventName, message.data, id)
     }
     /**
      * fire when all workers post initialized message 
@@ -96,13 +96,13 @@ class Controller extends EventEmitter  {
     }
     createShareEvent(eventName, shareFunc) {
         const func = function (message, id) {
-            const shareData = shareFunc(message, id);
-            this.broadcast(eventName, shareData);
-        
+            const shareData = shareFunc(message, id)
+            this.broadcast(eventName, shareData)
 
 
-        }.bind(this);
-        this.on(eventName, func);
+
+        }.bind(this)
+        this.on(eventName, func)
     }
     /**
      * broadcast all workers
@@ -112,14 +112,14 @@ class Controller extends EventEmitter  {
      */
     broadcast(eventName, data, excludeId) {
         const message = createMessage(eventName, data)
-        
-        for (const [id, worker] of Object.entries(this.workers)) {
-                if (id === excludeId) {
-                    continue;
 
-                }
-                
-                worker.postMessage(message);
+        for (const [id, worker] of Object.entries(this.workers)) {
+            if (id === excludeId) {
+                continue
+
+            }
+
+            worker.postMessage(message)
 
         }
     }
@@ -129,28 +129,28 @@ class Controller extends EventEmitter  {
      * @param {string} eventName 
      * @param {any} data 
      */
-    postMessage(id, eventName,data) {
+    postMessage(id, eventName, data) {
         /**
          * @type {Worker}
          */
-        const worker = this.workers[id];
-      
+        const worker = this.workers[id]
+
         worker.postMessage(createMessage(eventName, data))
-        
+
     }
     /**
      * terminate all workers
      * 
      */
-    terminate(){
+    terminate() {
         const proms = []
         for (const worker of Object.values(this.workers)) {
-            
-           proms.push(worker.terminate())
+
+            proms.push(worker.terminate())
 
         }
-     
-        return Promise.all(proms);
+
+        return Promise.all(proms)
     }
 
 

@@ -1,7 +1,7 @@
 const CONSTS = require('./consts')
-const { parentPort, workerData } = require('node:worker_threads');
+const { parentPort, workerData } = require('node:worker_threads')
 const { EventEmitter } = require('node:events')
-const createMessage = require('./message');
+const createMessage = require('./message')
 
 class Worker extends EventEmitter {
     /**
@@ -11,12 +11,12 @@ class Worker extends EventEmitter {
     constructor(emitterOptions = {}) {
         super(emitterOptions)
 
-        this._handler = this._handler.bind(this);
-        parentPort.on('message', this._handler);
+        this._handler = this._handler.bind(this)
+        parentPort.on('message', this._handler)
 
     }
     getWokerData() {
-        return workerData;
+        return workerData
     }
     /**
      * report initialize process done
@@ -34,7 +34,7 @@ class Worker extends EventEmitter {
     postMessage(event, data) {
 
 
-        parentPort.postMessage(createMessage(event, data));
+        parentPort.postMessage(createMessage(event, data))
 
     }
     /**
