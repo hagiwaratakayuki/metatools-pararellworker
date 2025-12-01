@@ -12,7 +12,15 @@ class Worker extends EventEmitter {
         super(emitterOptions)
 
         this._handler = this._handler.bind(this)
-        parentPort.on('message', this._handler)
+        this.listenMessageEvent()
+
+    }
+    /**
+     * 
+     * @param {MessagePort} _parentPort 
+     */
+    listenMessageEvent(_parentPort = parentPort) {
+        _parentPort.on('message', this._handler)
 
     }
     getWokerData() {
