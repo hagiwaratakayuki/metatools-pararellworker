@@ -190,14 +190,65 @@ class Controller {
      * 
      */
     terminate() {
-        const proms = []
-        for (const worker of Object.values(this.workers)) {
 
-            proms.push(worker.terminate())
+
+        const rootObserver = {
+
+            resolve: null,
+            reject: null,
+            isRejected: false,
+            unterminatedCount: this.workerNumber,
+            results: {},
+            applyReject: function (id, reason) {
+                this.isRejected = true
+                this.applyResult(id, reason)
+
+            },
+            applyResult: function (id, result) {
+                this.results[id] = result
+                this.unterminatedCount -= 1
+                if (this.unterminatedCount === 0) {
+                    if (this.isRejected) {
+                        this.reject(this.results)
+                    }
+                    else {
+                        this.resolve(this.results)
+
+                    }
+
+
+                }
+
+            }
 
         }
 
-        return Promise.all(proms)
+        const promise = new Promise((resolve, reject) => {
+            rootObserver.resolve = resolve
+            rootObserver.reject = reject
+
+        })
+
+
+        for (const [id, worker] of Object.entries(this.workers)) {
+            const observer = {
+                id,
+                root: rootObserver,
+                applyReject(reason) {
+                    this.root.applyReject(this.id, reason)
+
+                },
+                applyResult(result) {
+                    this.root.applyResult(this.id, result)
+
+
+                }
+
+            }
+            worker.terminate().then(observer.applyResult.bind(observer), observer.applyReject.bind(observer))
+        }
+
+        return promise
     }
 
 
