@@ -36,11 +36,61 @@ class Dispatcher {
      * @param {Message} message 
      * @param {number} id 
      */
-    dispatch(message, id) {
+    messageDispatch(message, id) {
 
         this._events.emit(message.eventName, message.data, id)
     }
+
 }
+
+class WorkerEventHandler {
+    /**
+     * @type {any}
+     */
+    _id
+    /**
+     * @type {EventEmitter}
+     */
+    _events
+
+    /**
+     * @type {Worker}
+     */
+    _worker
+    /**
+     * @type {string}
+     */
+    _eventName
+
+
+    /**
+     * 
+     * @param {*} id 
+     * @param {EventEmitter} events 
+     * @param {string} eventName 
+     *  
+     */
+
+    constructor(id, worker, events, eventName) {
+        this._id = id
+        this._events = events
+        this._worker = worker
+        this._eventName = eventName
+        const handleEvent = this.handleEvent.bind(this)
+        this._worker.on(eventName, handleEvent)
+
+
+
+    }
+    handleEvent(...args) {
+
+        this._events.emit(this._eventName, this._id, this._worker, ..._args)
+
+    }
+}
+
+const WORKER_EVENT_NAMES = ['messageerror', 'online', 'error', 'exit']
+
 
 /**
  * @typedef {import('./message').Message} Message
@@ -50,11 +100,20 @@ class Controller {
     /**
      * @type {EventEmitter}
      */
-    events
+    messageEvents
+    /**
+     * @type {EventEmitter}
+     */
+    workerEvents
     /**
      * @type {typeof Dispatcher}
      */
     _dispatcherClass
+
+    /**
+     * @type {typeof WorkerEventHandler}
+     */
+    _workerEventHandlerClass
 
 
     /**
@@ -63,14 +122,17 @@ class Controller {
      * @param {number} workerNumber 
      * @param {any} workerOptions
      * @param {any} emitterOptions
-     * @param {typeof EventEmitter} eventsClass
+     * @param {typeof EventEmitter} [workerEmitterClass=EventEmitter] 
+     * @param {typeof WorkerEventHandler} [workerEventHandlerCalss=WorkerEventHandler] 
+     * @param {any} [workerEmitterOptions={}] 
+     * @param {typeof EventEmitter} emitterClass
      * @param {typeof Dispatcher} dispatcherClass
      * @see  https://nodejs.org/api/worker_threads.html#new-workerfilename-options
      * @see  https://nodejs.org/api/events.html#capture-rejections-of-promises
      * 
      */
-    constructor(workerpath, workerNumber, workerOptions = {}, emitterOptions = {}, dispatcherClass = Dispatcher, eventsClass = EventEmitter) {
-        super(emitterOptions)
+    constructor(workerpath, workerNumber, workerOptions = {}, emitterOptions = {}, workerEmitterOptions = {}, dispatcherClass = Dispatcher, workerEventHandlerCalss = WorkerEventHandler, emitterClass = EventEmitter, workerEmitterClass = EventEmitter) {
+
         /**
          * @type {{number:Worker}}
          */
@@ -79,7 +141,9 @@ class Controller {
         this._notInitCount = workerNumber
         this._initResults = {}
         this._dispatcherClass = dispatcherClass
-        this.events = new eventsClass(emitterOptions)
+        this._workerEventHandlerClass = workerEventHandlerCalss
+        this.messageEvents = new emitterClass(emitterOptions)
+        this.workerEvents = new workerEmitterClass(workerEmitterOptions)
 
         let _workerPath
         if (typeof workerpath === 'string' || workerpath instanceof String) {
@@ -90,11 +154,22 @@ class Controller {
 
             _workerPath = path.join(workerpath.base, workerpath.worker)
         }
-        for (let id = 0; id < workerNumber; id++) {
-            const worker = new Worker(_workerPath, workerOptions)
-            this.workers[id] = worker
 
+        for (let id = 0; id < workerNumber; id++) {
+            // try...catchでワーカー生成時のエラーを捕捉
+            let worker
+            try {
+                worker = new Worker(_workerPath, workerOptions)
+            } catch (error) {
+
+                throw new Error(`Failed to create worker #${id}: ${error.message}`)
+            }
+            this.workers[id] = worker
+            // event dispatch
             worker.on('message', this._createOnMessage(id))
+            for (const eventName of WORKER_EVENT_NAMES) {
+                worker.on(eventName, new this._workerEventHandlerClass(id, worker, this.workerEvents, eventName))
+            }
 
         }
         this.on(CONSTS.INIT_EVENT, this._handleInitEvent.bind(this))
@@ -103,7 +178,7 @@ class Controller {
 
     }
     on(eventName, callback) {
-        this.events.on(eventName, callback)
+        this.messageEvents.on(eventName, callback)
 
     }
     /**
@@ -113,8 +188,8 @@ class Controller {
      */
     _createOnMessage(id) {
 
-        const dispathcher = new this._dispatcherClass(id, this.events)
-        return dispathcher.dispatch.bind(dispathcher)
+        const dispathcher = new this._dispatcherClass(id, this.messageEvents)
+        return dispathcher.messageDispatch.bind(dispathcher)
 
     }
     _handleInitEvent(message, id) {
@@ -123,7 +198,7 @@ class Controller {
         this._notInitCount -= 1
         this._initResults[id] = message.data
         if (this._notInitCount === 0) {
-            this.events.emit(CONSTS.INIT_EVENT_ALL, this._initResults)
+            this.messageEvents.emit(CONSTS.INIT_EVENT_ALL, this._initResults)
 
         }
 
@@ -135,10 +210,18 @@ class Controller {
      * fire when all workers post initialized message 
      * @param {(value:any, id:any)=> void} callback 
      */
+    onInitAll(callback) {
+        this.messageEvents.on(CONSTS.INIT_EVENT_ALL, callback)
+
+    }/**
+     * fire when all workers post initialized message 
+     * @param {(value:any, id:any)=> void} callback 
+     */
     onInit(callback) {
-        this.events.on(CONSTS.INIT_EVENT_ALL, callback)
+        this.messageEvents.on(CONSTS.INIT_EVENT, callback)
 
     }
+
     createShareEvent(eventName, shareFunc) {
 
         const func = function (message, id) {
@@ -223,7 +306,7 @@ class Controller {
 
         }
 
-        const promise = new Promise((resolve, reject) => {
+        const promise = new Promise(function (resolve, reject) {
             rootObserver.resolve = resolve
             rootObserver.reject = reject
 
