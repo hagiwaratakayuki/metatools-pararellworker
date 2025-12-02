@@ -88,7 +88,10 @@ class WorkerEventHandler {
 
     }
 }
-
+/**
+ * @typedef {'messageerror'| 'online'| 'error'|'exit'} DefaultSupportedWorkerEvents
+ * @type {DefaultSupportedWorkerEvents[]}
+ */
 const WORKER_EVENT_NAMES = ['messageerror', 'online', 'error', 'exit']
 
 
@@ -167,8 +170,9 @@ class Controller {
             this.workers[id] = worker
             // event dispatch
             worker.on('message', this._createOnMessage(id))
+
             for (const eventName of WORKER_EVENT_NAMES) {
-                worker.on(eventName, new this._workerEventHandlerClass(id, worker, this.workerEvents, eventName))
+                new this._workerEventHandlerClass(id, worker, this.workerEvents, eventName)
             }
 
         }
@@ -179,6 +183,15 @@ class Controller {
     }
     on(eventName, callback) {
         this.messageEvents.on(eventName, callback)
+
+    }
+    /**
+     * 
+     * @param {DefaultSupportedWorkerEvents} eventName 
+     * @param {*} callback 
+     */
+    onWorkerEvent(eventName, callback) {
+        this.workerEvents.on(eventName, callback)
 
     }
     /**
@@ -213,7 +226,8 @@ class Controller {
     onInitAll(callback) {
         this.messageEvents.on(CONSTS.INIT_EVENT_ALL, callback)
 
-    }/**
+    }
+    /**
      * fire when all workers post initialized message 
      * @param {(value:any, id:any)=> void} callback 
      */
