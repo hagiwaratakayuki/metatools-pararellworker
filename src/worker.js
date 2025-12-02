@@ -21,22 +21,23 @@ class DefultPortEventsHandler {
     _events
 
     /**
-     * @type {MessgePort}
-     * 
-     * 
+     * @type {import('node:worker_threads').MessagePort}     * 
      */
     _messagePort
+
     /**
      * 
      * @param {string} eventName 
      * @param {EventEmitter} events
-     * @param {MessagePort} messagePort  
-     */
-
+     * @param {import('node:worker_threads').MessagePort} messagePort      
+     * */
     constructor(eventName, events, messagePort) {
         this._eventName = eventName
         this._events = events
         this._messagePort = messagePort
+        this._messagePort = messagePort
+        this._handler = this._handler.bind(this)
+        this._events.on(this._eventName, this._handler)
 
     }
     _handler(...args) {
@@ -64,8 +65,10 @@ class Worker {
      */
     _portEventsHandlerClass
 
-
-
+    /**
+     * @type {import("node:worker_threads").MessagePort}
+     */
+    _messagePort
 
 
     /**
@@ -87,13 +90,16 @@ class Worker {
     }
     /**
      * 
-     * @param {MessagePort} _parentPort 
+     * @param {import('node:worker_threads').MessagePort} _parentPort 
      */
     listenMessageEvent(_parentPort = parentPort) {
         _parentPort.on('message', this._handler)
         for (const eventName of PORT_EVENTS) {
             new this._portEventsHandlerClass(eventName, this.portEvents, _parentPort)
         }
+        this._messagePort = _parentPort
+
+
 
     }
     on(eventName, handler) {
@@ -104,7 +110,7 @@ class Worker {
         this.portEvents.on(eventName, handler)
 
     }
-    /**
+
     getWokerData() {
         return workerData
     }
@@ -124,7 +130,7 @@ class Worker {
     postMessage(event, data) {
 
 
-        parentPort.postMessage(createMessage(event, data))
+        this._parentPort.postMessage(createMessage(event, data))
 
     }
     /**
