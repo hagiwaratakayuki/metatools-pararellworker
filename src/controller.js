@@ -1,4 +1,4 @@
-const { Worker } = require('worker_threads')
+const { Worker } = require('node:worker_threads')
 const path = require('node:path')
 const process = require('node:process')
 const { EventEmitter } = require('node:events')
@@ -9,22 +9,67 @@ const CONSTS = require('./consts')
 
 const cwd = process.cwd()
 
+class Dispatcher {
+    /**
+     * @type {any}
+     */
+    _id
+
+    /**
+     * @type {EventEmitter}
+     */
+    _events
+
+    /**
+     * @param {*} id
+     * @param {EventEmitter} events  
+     */
+    constructor(id, events) {
+        this._id = id
+        this._events = events
+
+
+
+    }
+    /**
+     * 
+     * @param {Message} message 
+     * @param {number} id 
+     */
+    dispatch(message, id) {
+
+        this._events.emit(message.eventName, message.data, id)
+    }
+}
+
 /**
  * @typedef {import('./message').Message} Message
  */
 
-class Controller extends EventEmitter {
+class Controller {
+    /**
+     * @type {EventEmitter}
+     */
+    events
+    /**
+     * @type {typeof Dispatcher}
+     */
+    _dispatcherClass
+
+
     /**
      * worker controller
      * @param {string | {worker:string, base:string}} workerpath when  string path from app root path. when list, path, from base path 
      * @param {number} workerNumber 
      * @param {any} workerOptions
      * @param {any} emitterOptions
+     * @param {typeof EventEmitter} eventsClass
+     * @param {typeof Dispatcher} dispatcherClass
      * @see  https://nodejs.org/api/worker_threads.html#new-workerfilename-options
      * @see  https://nodejs.org/api/events.html#capture-rejections-of-promises
      * 
      */
-    constructor(workerpath, workerNumber, workerOptions = {}, emitterOptions = {}) {
+    constructor(workerpath, workerNumber, workerOptions = {}, emitterOptions = {}, dispatcherClass = Dispatcher, eventsClass = EventEmitter) {
         super(emitterOptions)
         /**
          * @type {{number:Worker}}
@@ -33,6 +78,9 @@ class Controller extends EventEmitter {
         this.workerNumber = workerNumber
         this._notInitCount = workerNumber
         this._initResults = {}
+        this._dispatcherClass = dispatcherClass
+        this.events = new eventsClass(emitterOptions)
+
         let _workerPath
         if (typeof workerpath === 'string' || workerpath instanceof String) {
             _workerPath = path.join(cwd, workerpath)
@@ -49,7 +97,13 @@ class Controller extends EventEmitter {
             worker.on('message', this._createOnMessage(id))
 
         }
+        this.on(CONSTS.INIT_EVENT, this._handleInitEvent.bind(this))
 
+
+
+    }
+    on(eventName, callback) {
+        this.events.on(eventName, callback)
 
     }
     /**
@@ -59,39 +113,30 @@ class Controller extends EventEmitter {
      */
     _createOnMessage(id) {
 
-        const func = function (message) {
-            this._onMessage(message, id)
-
-        }
-
-        return func.bind(this)
+        const dispathcher = new this._dispatcherClass(id, this.events)
+        return dispathcher.dispatch.bind(dispathcher)
 
     }
-    /**
-     * 
-     * @param {Message} message 
-     * @param {number} id 
-     */
-    _onMessage(message, id) {
-        if (message.eventName === CONSTS.INIT_EVENT) {
-            this._notInitCount -= 1
-            this._initResults[id] = message.data
-            if (this._notInitCount === 0) {
-                this.emit(CONSTS.INIT_EVENT, this._initResults)
+    _handleInitEvent(message, id) {
 
-            }
-            return
+
+        this._notInitCount -= 1
+        this._initResults[id] = message.data
+        if (this._notInitCount === 0) {
+            this.events.emit(CONSTS.INIT_EVENT_ALL, this._initResults)
 
         }
 
-        this.emit(message.eventName, message.data, id)
+
+
+
     }
     /**
      * fire when all workers post initialized message 
      * @param {(value:any, id:any)=> void} callback 
      */
     onInit(callback) {
-        this.on(CONSTS.INIT_EVENT, callback)
+        this.events.on(CONSTS.INIT_EVENT_ALL, callback)
 
     }
     createShareEvent(eventName, shareFunc) {
@@ -135,6 +180,7 @@ class Controller extends EventEmitter {
          * @type {Worker}
          */
         const worker = this.workers[id]
+
 
         worker.postMessage(createMessage(eventName, data))
 
