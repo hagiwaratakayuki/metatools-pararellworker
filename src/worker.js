@@ -36,7 +36,7 @@ class DefultPortEventsHandler {
         this._events = events
         this._parentPort = parentPort
         this._handler = this._handler.bind(this)
-        this._events.on(this._eventName, this._handler)
+        this._parentPort.on(this._eventName, this._handler)
 
     }
     _handler(...args) {
