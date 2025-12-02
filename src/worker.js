@@ -23,25 +23,24 @@ class DefultPortEventsHandler {
     /**
      * @type {import('node:worker_threads').MessagePort}     * 
      */
-    _messagePort
+    _parentPort
 
     /**
      * 
      * @param {string} eventName 
      * @param {EventEmitter} events
-     * @param {import('node:worker_threads').MessagePort} messagePort      
+     * @param {import('node:worker_threads').MessagePort} parentPort      
      * */
-    constructor(eventName, events, messagePort) {
+    constructor(eventName, events, parentPort) {
         this._eventName = eventName
         this._events = events
-        this._messagePort = messagePort
-        this._messagePort = messagePort
+        this._parentPort = parentPort
         this._handler = this._handler.bind(this)
         this._events.on(this._eventName, this._handler)
 
     }
     _handler(...args) {
-        return this._events.emit(this._eventName, this._messagePort, ...args)
+        return this._events.emit(this._eventName, this._parentPort, ...args)
 
 
     }
@@ -68,7 +67,7 @@ class Worker {
     /**
      * @type {import("node:worker_threads").MessagePort}
      */
-    _messagePort
+    _parentPort
 
 
     /**
@@ -97,7 +96,7 @@ class Worker {
         for (const eventName of PORT_EVENTS) {
             new this._portEventsHandlerClass(eventName, this.portEvents, _parentPort)
         }
-        this._messagePort = _parentPort
+        this._parentPort = _parentPort
 
 
 
