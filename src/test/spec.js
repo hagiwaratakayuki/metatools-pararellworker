@@ -55,7 +55,7 @@ describe('basic worker test', function () {
 
 
             controller.broadcast(testConsts.COUNTER_TRIGGER)
-            controller.postMessage(0, testConsts.COUNTER_TRIGGER)
+            controller.broadcast(testConsts.COUNTER_TRIGGER, null, 1)
             controller.broadcast(testConsts.COUNT_GET)
         })
 
@@ -66,18 +66,18 @@ describe('basic worker test', function () {
 
 
     it('should handle worker termination', function (done) {
-        const controller = new Controller('/src/test/worker.js', 2);
+        const controller = new Controller('/src/test/worker.js', 2)
         controller.onInitAll(function () {
             controller.terminate().then(function (r) {
 
                 assert(Object.keys(r).length, 2, 'all workers shoud be terminated')
-                assert(r[0], 0, 'id 0 should be return 0');
-                assert(r[1], 0, 'id 1 should be return 0');
+                assert(r[0], 0, 'id 0 should be return 0')
+                assert(r[1], 0, 'id 1 should be return 0')
 
 
-            }).finally(done);
-        });
-    });
+            }).finally(done)
+        })
+    })
 
     it('should handle when workerfile not exist', function () {
         let isErrorThrowed = false
@@ -96,14 +96,14 @@ describe('basic worker test', function () {
 
     })
     it('should handle worker error event', function (done) {
-        const controller = new Controller('/src/test/worker-for-error.js', 1);
+        const controller = new Controller('/src/test/worker-for-error.js', 1)
         controller.onWorkerEvent('error', (id, worker, error) => {
-            assert.equal(id, 0);
-            assert(error instanceof Error, 'should be error');
-            assert.equal(error.message, testConsts.ERROR_MESSAGE);
-            controller.terminate().finally(done);
-        });
-    });
+            assert.equal(id, 0)
+            assert(error instanceof Error, 'should be error')
+            assert.equal(error.message, testConsts.ERROR_MESSAGE)
+            controller.terminate().finally(done)
+        })
+    })
 
 })
 
