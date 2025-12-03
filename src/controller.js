@@ -1,4 +1,5 @@
 const { Worker } = require('node:worker_threads')
+const { accessSync, constants } = require('node:fs')
 const path = require('node:path')
 const process = require('node:process')
 const { EventEmitter } = require('node:events')
@@ -34,11 +35,12 @@ class Dispatcher {
     /**
      * 
      * @param {Message} message 
-     * @param {number} id 
+     *
      */
     messageDispatch(message, id) {
 
-        this._events.emit(message.eventName, message.data, id)
+
+        this._events.emit(message.eventName, message.data, this._id)
     }
 
 }
@@ -84,10 +86,17 @@ class WorkerEventHandler {
     }
     handleEvent(...args) {
 
-        this._events.emit(this._eventName, this._id, this._worker, ..._args)
+        this._events.emit(this._eventName, this._id, this._worker, ...args)
+
+
+
+
+
 
     }
 }
+
+
 /**
  * @typedef {'messageerror'| 'online'| 'error'|'exit'} DefaultSupportedWorkerEvents
  * @type {DefaultSupportedWorkerEvents[]}
@@ -95,6 +104,20 @@ class WorkerEventHandler {
 const WORKER_EVENT_NAMES = ['messageerror', 'online', 'error', 'exit']
 
 
+function TEMPORARY_WORKER_ERROR_HANDLER(param) {
+    if (param instanceof Error && param.message) {
+        console.log(param.message)
+        if ('stack' in param) {
+            console.log(param.stack)
+        }
+
+    }
+    else if (typeof param !== 'number' && typeof param !== 'undefined' && param !== null) {
+        console.log(param)
+    }
+
+}
+const CASH_WORKER_EXIST = {}
 /**
  * @typedef {import('./message').Message} Message
  */
@@ -118,6 +141,15 @@ class Controller {
      */
     _workerEventHandlerClass
 
+    /**
+     * @type {boolean}
+     */
+    _isTemporayWorkerErrorRemoved
+
+    /**
+     * @type {Map<number,Worker>}
+     */
+    workers
 
     /**
      * worker controller
@@ -134,19 +166,21 @@ class Controller {
      * @see  https://nodejs.org/api/events.html#capture-rejections-of-promises
      * 
      */
-    constructor(workerpath, workerNumber, workerOptions = {}, emitterOptions = {}, workerEmitterOptions = {}, dispatcherClass = Dispatcher, workerEventHandlerCalss = WorkerEventHandler, emitterClass = EventEmitter, workerEmitterClass = EventEmitter) {
+    constructor(workerpath, workerNumber, workerErrorHandler = TEMPORARY_WORKER_ERROR_HANDLER, workerOptions = {}, emitterOptions = {}, workerEmitterOptions = {}, dispatcherClass = Dispatcher, workerEventHandlerCalss = WorkerEventHandler, emitterClass = EventEmitter, workerEmitterClass = EventEmitter) {
 
-        /**
-         * @type {{number:Worker}}
-         */
-        this.workers = {}
+
+        this.workers = new Map()
         this.workerNumber = workerNumber
         this._notInitCount = workerNumber
         this._initResults = {}
         this._dispatcherClass = dispatcherClass
         this._workerEventHandlerClass = workerEventHandlerCalss
         this.messageEvents = new emitterClass(emitterOptions)
+
+        // worker events
         this.workerEvents = new workerEmitterClass(workerEmitterOptions)
+        this._isTemporayWorkerErrorRemoved = workerErrorHandler !== TEMPORARY_WORKER_ERROR_HANDLER
+        this.workerEvents.on('error', workerErrorHandler)
 
         let _workerPath
         if (typeof workerpath === 'string' || workerpath instanceof String) {
@@ -157,23 +191,35 @@ class Controller {
 
             _workerPath = path.join(workerpath.base, workerpath.worker)
         }
+        if (_workerPath in CASH_WORKER_EXIST === true && CASH_WORKER_EXIST[_workerPath] !== true) {
+            throw CASH_WORKER_EXIST[_workerPath]
 
-        for (let id = 0; id < workerNumber; id++) {
-            // try...catchでワーカー生成時のエラーを捕捉
-            let worker
+        }
+        else {
             try {
-                worker = new Worker(_workerPath, workerOptions)
-            } catch (error) {
-
-                throw new Error(`Failed to create worker #${id}: ${error.message}`)
+                accessSync(_workerPath, constants.X_OK | constants.R_OK)
             }
-            this.workers[id] = worker
+            catch (error) {
+                CASH_WORKER_EXIST[_workerPath] = error
+                throw error
+            }
+        }
+        for (let id = 0; id < workerNumber; id++) {
+
+            let worker
+
+            worker = new Worker(_workerPath, workerOptions)
+
+            this.workers.set(id, worker)
             // event dispatch
             worker.on('message', this._createOnMessage(id))
 
             for (const eventName of WORKER_EVENT_NAMES) {
                 new this._workerEventHandlerClass(id, worker, this.workerEvents, eventName)
             }
+
+            this.workerEvents.on('error', workerErrorHandler)
+
 
         }
         this.on(CONSTS.INIT_EVENT, this._handleInitEvent.bind(this))
@@ -188,9 +234,13 @@ class Controller {
     /**
      * 
      * @param {DefaultSupportedWorkerEvents} eventName 
-     * @param {*} callback 
+     * @param {Function} callback 
      */
     onWorkerEvent(eventName, callback) {
+        if (eventName === 'error' && this._isTemporayWorkerErrorRemoved === false) {
+            this.workerEvents.removeListener('error', TEMPORARY_WORKER_ERROR_HANDLER)
+
+        }
         this.workerEvents.on(eventName, callback)
 
     }
@@ -209,7 +259,8 @@ class Controller {
 
 
         this._notInitCount -= 1
-        this._initResults[id] = message.data
+        this._initResults[id] = message
+        this.messageEvents.emit(CONSTS.INIT_EVENT_SINGLE, message, id)
         if (this._notInitCount === 0) {
             this.messageEvents.emit(CONSTS.INIT_EVENT_ALL, this._initResults)
 
@@ -228,11 +279,11 @@ class Controller {
 
     }
     /**
-     * fire when all workers post initialized message 
+     * fire when single workers post initialized message 
      * @param {(value:any, id:any)=> void} callback 
      */
     onInit(callback) {
-        this.messageEvents.on(CONSTS.INIT_EVENT, callback)
+        this.messageEvents.on(CONSTS.INIT_EVENT_SINGLE, callback)
 
     }
 
@@ -256,7 +307,7 @@ class Controller {
     broadcast(eventName, data, excludeId) {
         const message = createMessage(eventName, data)
 
-        for (const [id, worker] of Object.entries(this.workers)) {
+        for (const [id, worker] of this.workers) {
             if (id === excludeId) {
                 continue
 
@@ -276,7 +327,8 @@ class Controller {
         /**
          * @type {Worker}
          */
-        const worker = this.workers[id]
+        const worker = this.workers.get(id)
+
 
 
         worker.postMessage(createMessage(eventName, data))
@@ -327,7 +379,7 @@ class Controller {
         })
 
 
-        for (const [id, worker] of Object.entries(this.workers)) {
+        for (const [id, worker] of this.workers) {
             const observer = {
                 id,
                 root: rootObserver,
@@ -342,6 +394,7 @@ class Controller {
                 }
 
             }
+
             worker.terminate().then(observer.applyResult.bind(observer), observer.applyReject.bind(observer))
         }
 

@@ -105,6 +105,15 @@ class Worker {
         this.messageEvents.on(eventName, handler)
 
     }
+    /**
+     * @overload
+     * @param {DefaultSupportedPortEvents} eventName 
+     * @param {*} handler 
+     * 
+     * @overload
+     * @param {string} eventName     * 
+     * @param {*} handler 
+     */
     onPortEvent(eventName, handler) {
         this.portEvents.on(eventName, handler)
 
@@ -139,7 +148,7 @@ class Worker {
     _handler(message) {
 
 
-        this.emit(message.eventName, message.data)
+        this.messageEvents.emit(message.eventName, message.data)
 
     }
 
