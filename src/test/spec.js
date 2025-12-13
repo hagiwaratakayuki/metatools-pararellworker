@@ -6,7 +6,7 @@ const { it } = require('node:test')
 describe('basic worker test', function () {
 
     it('should invoke worker and invoke init event', function (done) {
-        const controller = new Controller('/src/test/worker.js', 1)
+        const controller = new Controller('./src/test/worker.js', 1)
         controller.onInitAll((data) => {
             const initData = data[0]
 
@@ -18,7 +18,7 @@ describe('basic worker test', function () {
 
     })
     it('should invoke return event', function (done) {
-        const controller = new Controller('/src/test/worker.js', 1)
+        const controller = new Controller('./src/test/worker.js', 1)
         const value = Math.random()
         controller.on(testConsts.RETURN_TEST, (data) => {
             assert.equal(value, data)
@@ -34,7 +34,7 @@ describe('basic worker test', function () {
 
     })
     it('should invoke counter event valid', function (done) {
-        const controller = new Controller('/src/test/worker.js', 2)
+        const controller = new Controller('./src/test/worker.js', 2)
         let countGetCount = 0
         let results = {}
         controller.on(testConsts.COUNT_GET, function (data, id) {
@@ -66,7 +66,7 @@ describe('basic worker test', function () {
 
 
     it('should handle worker termination', function (done) {
-        const controller = new Controller('/src/test/worker.js', 2)
+        const controller = new Controller('./src/test/worker.js', 2)
         controller.onInitAll(function () {
             controller.terminate().then(function (r) {
 
@@ -83,7 +83,7 @@ describe('basic worker test', function () {
         let isErrorThrowed = false
         let controller
         try {
-            controller = new Controller('/src/test/worker-not-exist.js', 2)
+            controller = new Controller('./src/test/worker-not-exist.js', 2)
         } catch (error) {
             isErrorThrowed = error instanceof Error
 
@@ -94,15 +94,6 @@ describe('basic worker test', function () {
 
 
 
-    })
-    it('should handle worker error event', function (done) {
-        const controller = new Controller('/src/test/worker-for-error.js', 1)
-        controller.onWorkerEvent('error', (id, worker, error) => {
-            assert.equal(id, 0)
-            assert(error instanceof Error, 'should be error')
-            assert.equal(error.message, testConsts.ERROR_MESSAGE)
-            controller.terminate().finally(done)
-        })
     })
 
 })

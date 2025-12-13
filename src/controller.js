@@ -1,7 +1,10 @@
 const { Worker } = require('node:worker_threads')
-const { accessSync, constants } = require('node:fs')
+const { accessSync, constants: fsConstants } = require('node:fs')
 const path = require('node:path')
 const process = require('node:process')
+const { fileURLToPath, pathToFileURL } = require('node:url')
+
+
 const { EventEmitter } = require('node:events')
 const createMessage = require('./message')
 
@@ -184,7 +187,9 @@ class Controller {
 
         let _workerPath
         if (typeof workerpath === 'string' || workerpath instanceof String) {
-            _workerPath = path.join(cwd, workerpath)
+
+            _workerPath = path.resolve(workerpath)
+
 
         }
         else {
@@ -197,18 +202,19 @@ class Controller {
         }
         else {
             try {
-                accessSync(_workerPath, constants.X_OK | constants.R_OK)
+                accessSync(_workerPath, fsConstants.X_OK | fsConstants.R_OK)
             }
             catch (error) {
                 CASH_WORKER_EXIST[_workerPath] = error
                 throw error
             }
         }
+        const workerUrl = pathToFileURL(_workerPath)
         for (let id = 0; id < workerNumber; id++) {
 
             let worker
 
-            worker = new Worker(_workerPath, workerOptions)
+            worker = new Worker(workerUrl, workerOptions)
 
             this.workers.set(id, worker)
             // event dispatch

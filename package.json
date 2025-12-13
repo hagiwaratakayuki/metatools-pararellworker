@@ -18,10 +18,8 @@
   "main": "./src/index.cjs",
   "author": "Hagiwara Takayuki",
   "license": "MIT",
-  "devdependencies": {
-    "mocha": "^10.2.0"
-  },
   "devDependencies": {
+    "mocha": "^10.2.0",
     "chai": "^6.2.1"
   }
 }
