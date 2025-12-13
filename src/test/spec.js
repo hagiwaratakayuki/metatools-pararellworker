@@ -84,13 +84,14 @@ describe('basic worker test', function () {
         let controller
         try {
             controller = new Controller('./src/test/worker-not-exist.js', 2)
+            assert.fail('controller should throw error when workerfile not exist')
         } catch (error) {
-            isErrorThrowed = error instanceof Error
+            assert(error instanceof Error, 'controller should throw error when workerfile not exist')
 
 
 
         }
-        assert(isErrorThrowed, 'controller should throw error when workerfile not exist')
+
 
 
 
