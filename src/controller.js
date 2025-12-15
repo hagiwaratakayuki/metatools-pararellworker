@@ -2,6 +2,8 @@ const { Worker } = require('node:worker_threads')
 const { accessSync, constants: fsConstants } = require('node:fs')
 const path = require('node:path')
 const process = require('node:process')
+const os = require('node:os')
+
 const { fileURLToPath, pathToFileURL } = require('node:url')
 
 
@@ -11,7 +13,7 @@ const createMessage = require('./message')
 const CONSTS = require('./consts')
 
 
-const cwd = process.cwd()
+
 
 class Dispatcher {
     /**
@@ -156,28 +158,52 @@ class Controller {
 
     /**
      * worker controller
-     * @param {string | {worker:string, base:string}} workerpath when  string path from app root path. when list, path, from base path 
-     * @param {number} workerNumber 
-     * @param {any} workerOptions
-     * @param {any} emitterOptions
-     * @param {typeof EventEmitter} [workerEmitterClass=EventEmitter] 
-     * @param {typeof WorkerEventHandler} [workerEventHandlerCalss=WorkerEventHandler] 
-     * @param {any} [workerEmitterOptions={}] 
-     * @param {typeof EventEmitter} emitterClass
-     * @param {typeof Dispatcher} dispatcherClass
+     * @constructor
+     * @param {object} param0
+     * @param {string | {worker:string, base:string}} param0.workerpath when  string path from app root path. when list, path, from base path 
+     * @param {number?} [param0._workerCount]
+     * @param {Function?} [param0.workerErrorHandler]
+     * @param {import('node:worker_threads').WorkerOptions?} [param0.workerOptions]
+     * @param {any} [param0.emitterOptions]
+     * @param {typeof EventEmitter?} [param0.workerEmitterClass=EventEmitter] 
+     * @param {typeof WorkerEventHandler?} [param0.workerEventHandlerClass=WorkerEventHandler] 
+     * @param {any} [param0.workerEmitterOptions={}] 
+     * @param {typeof EventEmitter?} [param0.emitterClass]
+     * @param {typeof Dispatcher?} [param0.dispatcherClass]
      * @see  https://nodejs.org/api/worker_threads.html#new-workerfilename-options
      * @see  https://nodejs.org/api/events.html#capture-rejections-of-promises
      * 
      */
-    constructor(workerpath, workerNumber, workerErrorHandler = TEMPORARY_WORKER_ERROR_HANDLER, workerOptions = {}, emitterOptions = {}, workerEmitterOptions = {}, dispatcherClass = Dispatcher, workerEventHandlerCalss = WorkerEventHandler, emitterClass = EventEmitter, workerEmitterClass = EventEmitter) {
+    constructor({
+        workerpath,
+        _workerCount = os.cpus().length,
+        workerErrorHandler = TEMPORARY_WORKER_ERROR_HANDLER,
+        workerOptions = {},
+        emitterOptions = {},
+        workerEmitterOptions = {},
+        dispatcherClass = Dispatcher,
+        workerEventHandlerClass = WorkerEventHandler,
+        emitterClass = EventEmitter,
+        workerEmitterClass = EventEmitter
+    }) {
+        let workerCount
+        if (typeof _workerCount !== 'number') {
+            throw '_workerCount must be number'
+        }
+        if (_workerCount < 1) {
+            workerCount = os.cpus().length
+        }
+        else {
+            workerCount = _workerCount
+        }
 
 
         this.workers = new Map()
-        this.workerNumber = workerNumber
-        this._notInitCount = workerNumber
+        this.workerCount = _workerCount
+        this._notInitCount = _workerCount
         this._initResults = {}
-        this._dispatcherClass = dispatcherClass
-        this._workerEventHandlerClass = workerEventHandlerCalss
+        this._dispatcherClass = dispatcherClass;
+        this._workerEventHandlerClass = workerEventHandlerClass;
         this.messageEvents = new emitterClass(emitterOptions)
 
         // worker events
@@ -210,7 +236,7 @@ class Controller {
             }
         }
         const workerUrl = pathToFileURL(_workerPath)
-        for (let id = 0; id < workerNumber; id++) {
+        for (let id = 0; id < workerCount; id++) {
 
             let worker
 
@@ -352,7 +378,7 @@ class Controller {
             resolve: null,
             reject: null,
             isRejected: false,
-            unterminatedCount: this.workerNumber,
+            unterminatedCount: this.workerCount,
             results: {},
             applyReject: function (id, reason) {
                 this.isRejected = true
