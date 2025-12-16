@@ -90,8 +90,12 @@ class WorkerEventHandler {
 
     }
     handleEvent(...args) {
+        /**
+         * @type {import('./protocol').WorkerEventData}
+         */
+        const data = { eventName: this._eventName, workerId: this._id, worker: this._worker }
 
-        this._events.emit(this._eventName, this._id, this._worker, ...args)
+        this._events.emit(data, ...args)
 
 
 
@@ -156,6 +160,10 @@ class Controller {
      */
     workers
 
+    /**
+     * @type {Set} 
+     */
+    _exitedWorker
     /**
      * worker controller
      * @constructor
@@ -276,6 +284,9 @@ class Controller {
         this.workerEvents.on(eventName, callback)
 
     }
+    _handleOnExit() {
+
+    }
     /**
      * inner function. bind event dispathcher to worker id 
      * @param {any} id 
@@ -334,10 +345,17 @@ class Controller {
      * broadcast all workers
      * @param {string} eventName 
      * @param {any} data 
-     * @param {number?} excludeId 
+     * @param {number | number[] | undefined} excludeId 
      */
     broadcast(eventName, data, excludeId) {
         const message = createMessage(eventName, data)
+        const excludeIdSets = new Set()
+        if (typeof excludeId === 'number') {
+            excludeIdSets.add(excludeId)
+        }
+        else {
+            for () { }
+        }
 
         for (const [id, worker] of this.workers) {
             if (id === excludeId) {
