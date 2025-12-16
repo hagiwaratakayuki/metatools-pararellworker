@@ -4,9 +4,12 @@
   "description": "utilty for worker threads",
   "homepage": "https://github.com/hagiwaratakayuki/metatools-pararellworker",
   "exports": {
-    "import": "./src/index.mjs",
-    "require": "./src/index.cjs",
-    "node": "./src/index.cjs"
+    "./protocol": "./src/protocol.d.ts",
+    ".": {
+      "import": "./src/index.mjs",
+      "require": "./src/index.cjs",
+      "node": "./src/index.cjs"
+    }
   },
   "scripts": {
     "test": "mocha src/test/spec.js"

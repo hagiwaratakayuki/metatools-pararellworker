@@ -204,6 +204,7 @@ class Controller {
         else {
             workerCount = _workerCount
         }
+        this._exitedWorker = new Set()
 
 
         this.workers = new Map()
@@ -284,7 +285,12 @@ class Controller {
         this.workerEvents.on(eventName, callback)
 
     }
-    _handleOnExit() {
+    /**
+     * 
+     * @param {import('./protocol.d.ts').WorkerEventData} data 
+     */
+    _handleOnExit(data) {
+        this._exitedWorker.add(data.workerId)
 
     }
     /**
@@ -345,20 +351,40 @@ class Controller {
      * broadcast all workers
      * @param {string} eventName 
      * @param {any} data 
-     * @param {number | number[] | undefined} excludeId 
+     * @param {number | Iterable<number> | undefined? } excludeId 
      */
     broadcast(eventName, data, excludeId) {
         const message = createMessage(eventName, data)
-        const excludeIdSets = new Set()
+        const excludeIdSets = new Set(this._exitedWorker)
         if (typeof excludeId === 'number') {
             excludeIdSets.add(excludeId)
         }
         else {
-            for () { }
+            const excludeIdType = typeof excludeId
+            let isExcludeIdInvalid = true
+            isExcludeIdInvalid &&= excludeIdType != 'undefined'
+            isExcludeIdInvalid &&= excludeIdType != 'null'
+            isExcludeIdInvalid &&= !Array.isArray(excludeId) && (excludeIdType != 'object' || typeof excludeIdType[Symbol.iterator] !== 'function')
+            if (isExcludeIdInvalid === true) {
+                throw `excludeId is must be omited, or, Array or Iterable of number. but ${excludeId}`
+
+            }
+            /**
+             * @type {Iterable<number>}
+             */
+            const excludeIds = excludeId || []
+            for (_excludeId of excludeIds) {
+                if (typeof _excludeId !== 'number') {
+                    throw `excludeId is must be omited, or, Array or Iterable of number. but ${excludeId}`
+                }
+                excludeIdSets.add(_excludeId)
+
+            }
+
         }
 
         for (const [id, worker] of this.workers) {
-            if (id === excludeId) {
+            if (excludeIdSets.has(id)) {
                 continue
 
             }
