@@ -4,13 +4,15 @@ const path = require('node:path')
 const process = require('node:process')
 const os = require('node:os')
 
-const { fileURLToPath, pathToFileURL } = require('node:url')
+const { pathToFileURL } = require('node:url')
 
 
 const { EventEmitter } = require('node:events')
 const createMessage = require('./message')
 
 const CONSTS = require('./consts')
+const { DEFAULT_NAMESPACE } = require('./namespace/default.cjs')
+const { createEventName } = require('./namespace/formatter.cjs')
 
 
 
@@ -127,6 +129,10 @@ function TEMPORARY_WORKER_ERROR_HANDLER(param) {
 
 }
 const CASH_WORKER_EXIST = {}
+
+
+class Exited { }
+
 /**
  * @typedef {import('./message').Message} Message
  */
@@ -156,10 +162,19 @@ class Controller {
     _isTemporayWorkerErrorRemoved
 
     /**
-     * @type {Map<number,Worker>}
+     * @type {Map<number, Worker>}
      */
     workers
 
+    /**
+     * @type {import('./namespace/protocol').EventNamespaces}
+     */
+    _eventNameSpaces
+
+    /**
+     * @type {import('./namespace/protocol').EventnameFormatter}
+     */
+    _formatter
     /**
      * @type {Set} 
      */
@@ -192,8 +207,12 @@ class Controller {
         dispatcherClass = Dispatcher,
         workerEventHandlerClass = WorkerEventHandler,
         emitterClass = EventEmitter,
-        workerEmitterClass = EventEmitter
+        workerEmitterClass = EventEmitter,
+
     }) {
+
+
+
         let workerCount
         if (typeof _workerCount !== 'number') {
             throw '_workerCount must be number'
@@ -205,6 +224,7 @@ class Controller {
             workerCount = _workerCount
         }
         this._exitedWorker = new Set()
+        this._waitingMessageEvents = {}
 
 
         this.workers = new Map()
@@ -272,6 +292,11 @@ class Controller {
         this.messageEvents.on(eventName, callback)
 
     }
+    once(eventName, callback) {
+        this.messageEvents.once(eventName, callback)
+    }
+
+
     /**
      * 
      * @param {DefaultSupportedWorkerEvents} eventName 
@@ -456,6 +481,11 @@ class Controller {
 
 
         for (const [id, worker] of this.workers) {
+            if (this._exitedWorker.has(id)) {
+                rootObserver.applyResulte(id, new Exited())
+                continue
+
+            }
             const observer = {
                 id,
                 root: rootObserver,

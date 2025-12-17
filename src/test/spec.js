@@ -18,7 +18,7 @@ describe('basic worker test', function () {
 
     })
     it('should invoke return event', function (done) {
-        const controller = new Controller('./src/test/worker.js', 1)
+        const controller = new Controller({ workerpath: './src/test/worker.js', _workerCount: 1 })
         const value = Math.random()
         controller.on(testConsts.RETURN_TEST, (data) => {
             assert.equal(value, data)
@@ -34,7 +34,7 @@ describe('basic worker test', function () {
 
     })
     it('should invoke counter event valid', function (done) {
-        const controller = new Controller('./src/test/worker.js', 2)
+        const controller = new Controller({ workerpath: './src/test/worker.js', _workerCount: 2 })
         let countGetCount = 0
         let results = {}
         controller.on(testConsts.COUNT_GET, function (data, id) {
