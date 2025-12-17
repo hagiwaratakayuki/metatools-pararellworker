@@ -6,7 +6,7 @@ const { it } = require('node:test')
 describe('basic worker test', function () {
 
     it('should invoke worker and invoke init event', function (done) {
-        const controller = new Controller('./src/test/worker.js', 1)
+        const controller = new Controller({ workerpath: './src/test/worker.js', _workerCount: 1 })
         controller.onInitAll((data) => {
             const initData = data[0]
 
