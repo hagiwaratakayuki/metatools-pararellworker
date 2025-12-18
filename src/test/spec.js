@@ -66,7 +66,7 @@ describe('basic worker test', function () {
 
 
     it('should handle worker termination', function (done) {
-        const controller = new Controller('./src/test/worker.js', 2)
+        const controller = new Controller({ workerpath: './src/test/worker.js', _workerCount: 2 })
         controller.onInitAll(function () {
             controller.terminate().then(function (r) {
 
@@ -82,7 +82,7 @@ describe('basic worker test', function () {
     it('should handle when workerfile not exist', function () {
 
         try {
-            const controller = new Controller('./src/test/worker-not-exist.js', 2)
+            const controller = new Controller({ workerpath: './src/test/worker-not-exist.js', _workerCount: 2 })
             assert.fail('controller should throw error when workerfile not exist')
         } catch (error) {
             assert(error instanceof Error, 'controller should throw error when workerfile not exist')
@@ -95,6 +95,32 @@ describe('basic worker test', function () {
 
 
     })
+    it('should handle worker termination', function (done) {
+        const _workerCount = 2
+        const controller = new Controller({ workerpath: './src/test/worker.js', _workerCount })
+        let requiredExitCount = _workerCount + 1
+
+        function checkAllExitDone(count = 1) {
+            requiredExitCount -= count
+            if (requiredExitCount === 0) {
+                done()
+            }
+        }
+
+
+        controller.onWorkerEvent('exit', function (data, code) {
+            assert(code, 0)
+            checkAllExitDone()
+
+        })
+        controller.onInitAll(function () {
+            controller.terminate().finally(function () {
+                checkAllExitDone()
+            })
+        })
+    })
+
+
 
 })
 

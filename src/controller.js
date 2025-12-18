@@ -92,12 +92,9 @@ class WorkerEventHandler {
 
     }
     handleEvent(...args) {
-        /**
-         * @type {import('./protocol').WorkerEventData}
-         */
-        const data = { eventName: this._eventName, workerId: this._id, worker: this._worker }
+        const data = { workerId: this._id, worker: this._worker }
 
-        this._events.emit(data, ...args)
+        this._events.emit(this._eventName, data, ...args)
 
 
 
