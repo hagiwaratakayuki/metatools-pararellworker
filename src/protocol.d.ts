@@ -1,7 +1,24 @@
 import type { Worker } from 'node:worker_threads'
-export type WorkerEventData = {
-    eventName: string;
+import type Controller from './controller.js'
+
+
+export type ControllerConstructorParameters = ConstructorParameters<typeof Controller>[number]
+export type WorkerData = {
     workerId: number;
     worker: Worker;
 
-} 
+}
+
+
+export type EventMap = {
+    "error": (data: WorkerData, err: Error) => void;
+    "exit": (data: WorkerData, exitCode: number) => void;
+    "messageerror": (data: WorkerData, error: Error) => void;
+    "online": (data: WorkerData) => void;
+}
+export type ProtocolMapToEventMap<EventMapT extends object> = {
+    [k in keyof EventMapT]: (data: EventMapT[k], id: number) => void;
+}
+
+
+

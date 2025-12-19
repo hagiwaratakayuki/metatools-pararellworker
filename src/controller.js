@@ -1,7 +1,7 @@
 const { Worker } = require('node:worker_threads')
 const { accessSync, constants: fsConstants } = require('node:fs')
 const path = require('node:path')
-const process = require('node:process')
+
 const os = require('node:os')
 
 const { pathToFileURL } = require('node:url')
@@ -11,98 +11,11 @@ const { EventEmitter } = require('node:events')
 const createMessage = require('./message')
 
 const CONSTS = require('./consts')
-const { DEFAULT_NAMESPACE } = require('./namespace/default.cjs')
-const { createEventName } = require('./namespace/formatter.cjs')
+const { MessageEventDispatcher } = require('./dispatcher/message_event.js')
+const { WorkerEventDispatcher } = require('./dispatcher/worker_event.js')
 
 
 
-
-class Dispatcher {
-    /**
-     * @type {any}
-     */
-    _id
-
-    /**
-     * @type {EventEmitter}
-     */
-    _events
-
-    /**
-     * @param {*} id
-     * @param {EventEmitter} events  
-     */
-    constructor(id, events) {
-        this._id = id
-        this._events = events
-
-
-
-    }
-    /**
-     * 
-     * @param {Message} message 
-     *
-     */
-    messageDispatch(message, id) {
-
-
-        this._events.emit(message.eventName, message.data, this._id)
-    }
-
-}
-
-class WorkerEventHandler {
-    /**
-     * @type {any}
-     */
-    _id
-    /**
-     * @type {EventEmitter}
-     */
-    _events
-
-    /**
-     * @type {Worker}
-     */
-    _worker
-    /**
-     * @type {string}
-     */
-    _eventName
-
-
-    /**
-     * 
-     * @param {*} id 
-     * @param {EventEmitter} events 
-     * @param {string} eventName 
-     *  
-     */
-
-    constructor(id, worker, events, eventName) {
-        this._id = id
-        this._events = events
-        this._worker = worker
-        this._eventName = eventName
-        const handleEvent = this.handleEvent.bind(this)
-        this._worker.on(eventName, handleEvent)
-
-
-
-    }
-    handleEvent(...args) {
-        const data = { workerId: this._id, worker: this._worker }
-
-        this._events.emit(this._eventName, data, ...args)
-
-
-
-
-
-
-    }
-}
 
 
 /**
@@ -131,25 +44,32 @@ const CASH_WORKER_EXIST = {}
 class Exited { }
 
 /**
- * @typedef {import('./message').Message} Message
+ * main thread contrller
+ * 
+ * ```
+ * import ProtocolMapToEventMap from 'meatatools-paralellworker'
+ * const controller:Controller<ProtocolMapToEventMap<YourEventNameToDataTypeMap>> = new Controller(params) 
+ * 
+ * ```
+ * 
+ * @template MessageEventMap
  */
-
 class Controller {
     /**
-     * @type {EventEmitter}
+     * @type {EventEmitter<MessageEventMap>}
      */
     messageEvents
     /**
-     * @type {EventEmitter}
+     * @type {EventEmitter<import('./protocol.d.ts').EventMap>}
      */
     workerEvents
     /**
-     * @type {typeof Dispatcher}
+     * @type {typeof MessageEventDispatcher}
      */
     _dispatcherClass
 
     /**
-     * @type {typeof WorkerEventHandler}
+     * @type {typeof WorkerEventDispatcher}
      */
     _workerEventHandlerClass
 
@@ -175,7 +95,7 @@ class Controller {
     /**
      * @type {Set} 
      */
-    _exitedWorker
+    existedWorker
     /**
      * worker controller
      * @constructor
@@ -186,10 +106,10 @@ class Controller {
      * @param {import('node:worker_threads').WorkerOptions?} [param0.workerOptions]
      * @param {any} [param0.emitterOptions]
      * @param {typeof EventEmitter?} [param0.workerEmitterClass=EventEmitter] 
-     * @param {typeof WorkerEventHandler?} [param0.workerEventHandlerClass=WorkerEventHandler] 
+     * @param {typeof WorkerEventDispatcher?} [param0.workerEventHandlerClass=WorkerEventHandler] 
      * @param {any} [param0.workerEmitterOptions={}] 
      * @param {typeof EventEmitter?} [param0.emitterClass]
-     * @param {typeof Dispatcher?} [param0.dispatcherClass]
+     * @param {typeof MessageEventDispatcher?} [param0.messageEventDispatcherClass]
      * @see  https://nodejs.org/api/worker_threads.html#new-workerfilename-options
      * @see  https://nodejs.org/api/events.html#capture-rejections-of-promises
      * 
@@ -201,8 +121,8 @@ class Controller {
         workerOptions = {},
         emitterOptions = {},
         workerEmitterOptions = {},
-        dispatcherClass = Dispatcher,
-        workerEventHandlerClass = WorkerEventHandler,
+        messageEventDispatcherClass: dispatcherClass = MessageEventDispatcher,
+        workerEventHandlerClass = WorkerEventDispatcher,
         emitterClass = EventEmitter,
         workerEmitterClass = EventEmitter,
 
@@ -220,7 +140,7 @@ class Controller {
         else {
             workerCount = _workerCount
         }
-        this._exitedWorker = new Set()
+        this.existedWorker = new Set()
         this._waitingMessageEvents = {}
 
 
@@ -309,10 +229,10 @@ class Controller {
     }
     /**
      * 
-     * @param {import('./protocol.d.ts').WorkerEventData} data 
+     * @param {import('./protocol.d.ts').WorkerData} data 
      */
     _handleOnExit(data) {
-        this._exitedWorker.add(data.workerId)
+        this.existedWorker.add(data.workerId)
 
     }
     /**
@@ -377,7 +297,7 @@ class Controller {
      */
     broadcast(eventName, data, excludeId) {
         const message = createMessage(eventName, data)
-        const excludeIdSets = new Set(this._exitedWorker)
+        const excludeIdSets = new Set(this.existedWorker)
         if (typeof excludeId === 'number') {
             excludeIdSets.add(excludeId)
         }
@@ -478,7 +398,7 @@ class Controller {
 
 
         for (const [id, worker] of this.workers) {
-            if (this._exitedWorker.has(id)) {
+            if (this.existedWorker.has(id)) {
                 rootObserver.applyResulte(id, new Exited())
                 continue
 
