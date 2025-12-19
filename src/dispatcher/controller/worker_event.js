@@ -42,7 +42,7 @@ class WorkerEventDispatcher {
          */
         const workerData = { workerId: this._id, worker: this._worker };
 
-        this._events.emit(this._eventName, workerData, ...args);
+        this._events.emit(this._eventName, ...args, workerData);
 
 
 

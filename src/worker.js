@@ -9,14 +9,16 @@ const { PortEventsDispatcher } = require('./dispatcher/worker/port_events')
  * @type {DefaultSupportedPortEvents[]}
  */
 const PORT_EVENTS = ['close', 'messageerror']
+
+
 /**
- * todo: apply type
- * @template {{}} SendeMessageProtocolMapT
- * @template {{}} RecieverMessageProtoclMapT
+ *
+ * @template {{}} SendMessageProtocolMapT
+ * @template {{}} RecieveMessageProtocolMapT
  */
 class Worker {
     /**
-     * @type {EventEmitter}
+     * @type {EventEmitter<import('./protocol').ProtocolMapToEventMap<RecieveMessageProtocolMapT>>}
      */
     messageEvents
 
@@ -67,18 +69,21 @@ class Worker {
 
 
     }
+    /**
+     * shorthand set handler for  message
+     * @template {keyof SendMessageProtocolMapT} eventNameT 
+     * @param {eventNameT} eventName
+     * @param {import('./protocol').ProtocolMapToEventMap<RecieveMessageProtocolMapT>[eventName]} handler 
+     */
     on(eventName, handler) {
         this.messageEvents.on(eventName, handler)
 
     }
     /**
-     * @overload
+     
      * @param {DefaultSupportedPortEvents} eventName 
      * @param {*} handler 
      * 
-     * @overload
-     * @param {string} eventName     * 
-     * @param {*} handler 
      */
     onPortEvent(eventName, handler) {
         this.portEvents.on(eventName, handler)
@@ -98,14 +103,14 @@ class Worker {
     }
     /**
      * post message for controller
-     * @template {string} eventType 
-     * @param {eventType} event
-     * @param {import('./protocol').ProtocolMapToEventMap<SendeMessageProtocolMapT>[eventType]} data  
+     * @template {keyof SendMessageProtocolMapT} eventNameT 
+     * @param {eventNameT} eventName
+     * @param {SendMessageProtocolMapT[eventNameT]} data  
      */
-    postMessage(event, data) {
+    postMessage(eventName, data) {
 
 
-        this._parentPort.postMessage(createMessage(event, data))
+        this._parentPort.postMessage(createMessage(eventName, data))
 
     }
     /**

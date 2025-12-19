@@ -46,14 +46,13 @@ class Exited { }
 /**
  * main thread contrller
  * 
- * todo: apply type
-
- * 
- * @template ProtocolMapT
+ *
+ * @template {{}} SendMessageProtocolMapT
+ * @template {{}} RecieveMessageProtocolMapT
  */
 class Controller {
     /**
-     * @type {EventEmitter<MessageEventMap>}
+     * @type {EventEmitter<import('./protocol').ProtocolMapToEventMap<RecieveMessageProtocolMapT>>}
      */
     messageEvents
     /**
@@ -92,7 +91,7 @@ class Controller {
     /**
      * @type {Set} 
      */
-    existedWorker
+    exitedWorker
     /**
      * worker controller
      * @constructor
@@ -137,7 +136,7 @@ class Controller {
         else {
             workerCount = _workerCount
         }
-        this.existedWorker = new Set()
+        this.exitedWorker = new Set()
         this._waitingMessageEvents = {}
 
 
@@ -202,8 +201,13 @@ class Controller {
 
 
     }
-    on(eventName, callback) {
-        this.messageEvents.on(eventName, callback)
+    /**
+     * @template {keyof RecieveMessageProtocolMapT} EventNameT
+     * @param {EventNameT} eventName 
+     * @param {ProtocolMapToEventMap<RecieveMessageProtocolMapT>[EventNameT]} handler 
+     */
+    on(eventName, handler) {
+        this.messageEvents.on(eventName, handler)
 
     }
     once(eventName, callback) {
@@ -229,7 +233,7 @@ class Controller {
      * @param {import('./protocol.d.ts').WorkerData} data 
      */
     _handleOnExit(data) {
-        this.existedWorker.add(data.workerId)
+        this.exitedWorker.add(data.workerId)
 
     }
     /**
@@ -294,7 +298,7 @@ class Controller {
      */
     broadcast(eventName, data, excludeId) {
         const message = createMessage(eventName, data)
-        const excludeIdSets = new Set(this.existedWorker)
+        const excludeIdSets = new Set(this.exitedWorker)
         if (typeof excludeId === 'number') {
             excludeIdSets.add(excludeId)
         }
@@ -334,9 +338,11 @@ class Controller {
     }
     /**
      * message for specific worker
-     * @param {number} id 
-     * @param {string} eventName 
-     * @param {any} data 
+     * 
+     * @template {keyof SendMessageProtocolMapT} EventNameT
+     * @param {number} id
+     * @param {EventNameT} eventName 
+     * @param {SendMessageProtocolMapT[EventNameT]} data
      */
     postMessage(id, eventName, data) {
         /**
@@ -395,7 +401,7 @@ class Controller {
 
 
         for (const [id, worker] of this.workers) {
-            if (this.existedWorker.has(id)) {
+            if (this.exitedWorker.has(id)) {
                 rootObserver.applyResulte(id, new Exited())
                 continue
 

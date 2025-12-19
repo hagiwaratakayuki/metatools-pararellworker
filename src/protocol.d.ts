@@ -11,10 +11,10 @@ export type WorkerData = {
 
 
 export type WorkerEventMap = {
-    "error": (data: WorkerData, err: Error) => void;
-    "exit": (data: WorkerData, exitCode: number) => void;
-    "messageerror": (data: WorkerData, error: Error) => void;
-    "online": (data: WorkerData) => void;
+    "error": (err: Error, data?: WorkerData) => void;
+    "exit": (exitCode: number, data: WorkerData) => void;
+    "messageerror": (error: Error, data: WorkerData) => void;
+    "online": (WorkerData) => void;
 }
 export type ProtocolMapToEventMap<EventMapT extends object> = {
     [k in keyof EventMapT]: (data: EventMapT[k], id: number) => void;
