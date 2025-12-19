@@ -41,7 +41,7 @@ function TEMPORARY_WORKER_ERROR_HANDLER(param) {
 const CASH_WORKER_EXIST = {}
 
 
-class Exited { }
+class AllreadyExited { }
 
 /**
  * main thread contrller
@@ -91,7 +91,7 @@ class Controller {
     /**
      * @type {Set} 
      */
-    exitedWorker
+    allreadyExitedWorker
     /**
      * worker controller
      * @constructor
@@ -136,7 +136,7 @@ class Controller {
         else {
             workerCount = _workerCount
         }
-        this.exitedWorker = new Set()
+        this.allreadyExitedWorker = new Set()
         this._waitingMessageEvents = {}
 
 
@@ -233,7 +233,7 @@ class Controller {
      * @param {import('./protocol.d.ts').WorkerData} data 
      */
     _handleOnExit(data) {
-        this.exitedWorker.add(data.workerId)
+        this.allreadyExitedWorker.add(data.workerId)
 
     }
     /**
@@ -298,7 +298,7 @@ class Controller {
      */
     broadcast(eventName, data, excludeId) {
         const message = createMessage(eventName, data)
-        const excludeIdSets = new Set(this.exitedWorker)
+        const excludeIdSets = new Set(this.allreadyExitedWorker)
         if (typeof excludeId === 'number') {
             excludeIdSets.add(excludeId)
         }
@@ -401,8 +401,8 @@ class Controller {
 
 
         for (const [id, worker] of this.workers) {
-            if (this.exitedWorker.has(id)) {
-                rootObserver.applyResulte(id, new Exited())
+            if (this.allreadyExitedWorker.has(id)) {
+                rootObserver.applyResulte(id, new AllreadyExited())
                 continue
 
             }
