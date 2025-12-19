@@ -52,7 +52,7 @@ class AllreadyExited { }
  */
 class Controller {
     /**
-     * @type {EventEmitter<import('./protocol').ProtocolMapToEventMap<RecieveMessageProtocolMapT>>}
+     * @type {EventEmitter<import('./protocol').ProtocolMapToEventMapForController<RecieveMessageProtocolMapT>>}
      */
     messageEvents
     /**
@@ -204,15 +204,13 @@ class Controller {
     /**
      * @template {keyof RecieveMessageProtocolMapT} EventNameT
      * @param {EventNameT} eventName 
-     * @param {ProtocolMapToEventMap<RecieveMessageProtocolMapT>[EventNameT]} handler 
+     * @param {import('./protocol').ProtocolMapToEventMapForController<RecieveMessageProtocolMapT>[EventNameT]} handler 
      */
     on(eventName, handler) {
         this.messageEvents.on(eventName, handler)
 
     }
-    once(eventName, callback) {
-        this.messageEvents.once(eventName, callback)
-    }
+
 
 
     /**

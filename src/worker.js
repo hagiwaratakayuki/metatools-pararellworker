@@ -18,7 +18,7 @@ const PORT_EVENTS = ['close', 'messageerror']
  */
 class Worker {
     /**
-     * @type {EventEmitter<import('./protocol').ProtocolMapToEventMap<RecieveMessageProtocolMapT>>}
+     * @type {EventEmitter<import('./protocol').ProtocolMapToEventMapForWorker<RecieveMessageProtocolMapT>>}
      */
     messageEvents
 
@@ -73,7 +73,7 @@ class Worker {
      * shorthand set handler for  message
      * @template {keyof SendMessageProtocolMapT} eventNameT 
      * @param {eventNameT} eventName
-     * @param {import('./protocol').ProtocolMapToEventMap<RecieveMessageProtocolMapT>[eventName]} handler 
+     * @param {import('./protocol').ProtocolMapToEventMapForWorker<RecieveMessageProtocolMapT>[eventName]} handler 
      */
     on(eventName, handler) {
         this.messageEvents.on(eventName, handler)
@@ -118,9 +118,15 @@ class Worker {
      * @param {import('./message').Message} message 
      */
     _handler(message) {
+        if ('data' in message && typeof message.data !== 'undefined' && message.data !== null) {
+            this._events.emit(message.eventName, message.data);
+        }
+        else {
+            this._events.emit(message.eventName);
+        }
 
 
-        this.messageEvents.emit(message.eventName, message.data)
+
 
     }
 
