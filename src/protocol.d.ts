@@ -16,8 +16,17 @@ export type WorkerEventMap = {
     "messageerror": (error: Error, data: WorkerData) => void;
     "online": (WorkerData) => void;
 }
-export type ProtocolMapToEventMap<EventMapT extends object> = {
-    [k in keyof EventMapT]: (data: EventMapT[k], id: number) => void;
+
+// handler utrity
+export type PromisableVoid = Promise<void> | void;
+export type noArgHandler = () => PromisableVoid
+export type idOnlyHandler = (id: number) => PromisableVoid
+export type dataOnlyHandler<DataT> = (data: DataT) => PromisableVoid
+export type dataWithIdHandler<DataT> = (data: DataT, id: number) => PromisableVoid
+export type argSwitch<DataT> = DataT extends null | undefined ? noArgHandler | idOnlyHandler : dataOnlyHandler<DataT> | dataWithIdHandler<DataT>
+
+export type ProtocolMapToEventMap<ProtocolMapT extends object> = {
+    [k in keyof ProtocolMapT]: argSwitch<ProtocolMapT[k]>
 }
 
 

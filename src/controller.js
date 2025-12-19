@@ -293,7 +293,7 @@ class Controller {
     /**
      * broadcast all workers
      * @param {string} eventName 
-     * @param {any} data 
+     * @param {any?} data 
      * @param {number | Iterable<number> | undefined? } excludeId 
      */
     broadcast(eventName, data, excludeId) {

@@ -27,8 +27,13 @@ class MessageEventDispatcher {
      */
     messageDispatch(message, id) {
 
+        if ('data' in message && typeof message.data !== 'undefined' && message.data !== null) {
+            this._events.emit(message.eventName, message.data, this._id);
+        }
+        else {
+            this._events.emit(message.eventName, this._id);
+        }
 
-        this._events.emit(message.eventName, message.data, this._id);
     }
 
 }
