@@ -11,8 +11,8 @@ const { EventEmitter } = require('node:events')
 const createMessage = require('./message')
 
 const CONSTS = require('./consts')
-const { MessageEventDispatcher } = require('./dispatcher/message_event.js')
-const { WorkerEventDispatcher } = require('./dispatcher/worker_event.js')
+const { MessageEventDispatcher } = require('./dispatcher/controller/message_event.js')
+const { WorkerEventDispatcher } = require('./dispatcher/controller/worker_event.js')
 
 
 
@@ -46,13 +46,10 @@ class Exited { }
 /**
  * main thread contrller
  * 
- * ```
- * import ProtocolMapToEventMap from 'meatatools-paralellworker'
- * const controller:Controller<ProtocolMapToEventMap<YourEventNameToDataTypeMap>> = new Controller(params) 
+ * todo: apply type
+
  * 
- * ```
- * 
- * @template MessageEventMap
+ * @template ProtocolMapT
  */
 class Controller {
     /**
@@ -60,7 +57,7 @@ class Controller {
      */
     messageEvents
     /**
-     * @type {EventEmitter<import('./protocol.d.ts').EventMap>}
+     * @type {EventEmitter<import('./protocol.d.ts').WorkerEventMap>}
      */
     workerEvents
     /**

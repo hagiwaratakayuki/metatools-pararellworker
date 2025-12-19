@@ -10,7 +10,7 @@ export type WorkerData = {
 }
 
 
-export type EventMap = {
+export type WorkerEventMap = {
     "error": (data: WorkerData, err: Error) => void;
     "exit": (data: WorkerData, exitCode: number) => void;
     "messageerror": (data: WorkerData, error: Error) => void;

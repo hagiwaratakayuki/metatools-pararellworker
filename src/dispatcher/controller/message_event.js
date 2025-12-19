@@ -22,7 +22,7 @@ class MessageEventDispatcher {
     }
     /**
      *
-     * @param {import('../message').Message} message
+     * @param {import('../../message').Message} message
      *
      */
     messageDispatch(message, id) {

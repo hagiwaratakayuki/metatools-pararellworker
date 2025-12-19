@@ -2,52 +2,18 @@ const CONSTS = require('./consts')
 const { parentPort, workerData } = require('node:worker_threads')
 const { EventEmitter } = require('node:events')
 const createMessage = require('./message')
+const { PortEventsDispatcher } = require('./dispatcher/worker/port_events')
 
 /**
  * @typedef  {"close" |  "messageerror"} DefaultSupportedPortEvents
  * @type {DefaultSupportedPortEvents[]}
  */
 const PORT_EVENTS = ['close', 'messageerror']
-
-class DefultPortEventsHandler {
-    /**
-     * @type {string}
-     */
-    _eventName
-
-    /**
-     * @type {EventEmitter}
-     */
-    _events
-
-    /**
-     * @type {import('node:worker_threads').MessagePort}     * 
-     */
-    _parentPort
-
-    /**
-     * 
-     * @param {string} eventName 
-     * @param {EventEmitter} events
-     * @param {import('node:worker_threads').MessagePort} parentPort      
-     * */
-    constructor(eventName, events, parentPort) {
-        this._eventName = eventName
-        this._events = events
-        this._parentPort = parentPort
-        this._handler = this._handler.bind(this)
-        this._parentPort.on(this._eventName, this._handler)
-
-    }
-    _handler(...args) {
-        return this._events.emit(this._eventName, this._parentPort, ...args)
-
-
-    }
-
-
-}
-
+/**
+ * todo: apply type
+ * @template {{}} SendeMessageProtocolMapT
+ * @template {{}} RecieverMessageProtoclMapT
+ */
 class Worker {
     /**
      * @type {EventEmitter}
@@ -60,9 +26,9 @@ class Worker {
     portEvents
 
     /**
-     * @type {typeof DefultPortEventsHandler}
+     * @type {typeof PortEventsDispatcher}
      */
-    _portEventsHandlerClass
+    _portEventsDispatcherClass
 
     /**
      * @type {import("node:worker_threads").MessagePort}
@@ -76,13 +42,13 @@ class Worker {
      * @param {any} [portEventOptions={}]
      * @param {typeof EventEmitter} [messageEventsClass=EventEmitter] 
      * @param {typeof EventEmitter} [portEventsClass=EventEmitter] 
-     * @param {typeof DefultPortEventsHandler} [portEventsHandlerClass=DefultPortEventsHandler]  
+     * @param {typeof PortEventsDispatcher} [portEventsDispatcherClass=PortEventsDispatcher]  
      */
-    constructor(messageEventOptions = {}, portEventOptions = {}, messageEventsClass = EventEmitter, portEventsClass = EventEmitter, portEventsHandlerClass = DefultPortEventsHandler) {
+    constructor(messageEventOptions = {}, portEventOptions = {}, messageEventsClass = EventEmitter, portEventsClass = EventEmitter, portEventsDispatcherClass = PortEventsDispatcher) {
 
         this.messageEvents = new messageEventsClass(messageEventOptions)
         this.portEvents = new portEventsClass(portEventOptions)
-        this._portEventsHandlerClass = portEventsHandlerClass
+        this._portEventsDispatcherClass = portEventsDispatcherClass
         this._handler = this._handler.bind(this)
         this.listenMessageEvent()
 
@@ -94,7 +60,7 @@ class Worker {
     listenMessageEvent(_parentPort = parentPort) {
         _parentPort.on('message', this._handler)
         for (const eventName of PORT_EVENTS) {
-            new this._portEventsHandlerClass(eventName, this.portEvents, _parentPort)
+            new this._portEventsDispatcherClass(eventName, this.portEvents, _parentPort)
         }
         this._parentPort = _parentPort
 
@@ -131,9 +97,10 @@ class Worker {
 
     }
     /**
-     * post message for controller 
-     * @param {string} event name of event 
-     * @param {any} data 
+     * post message for controller
+     * @template {string} eventType 
+     * @param {eventType} event
+     * @param {import('./protocol').ProtocolMapToEventMap<SendeMessageProtocolMapT>[eventType]} data  
      */
     postMessage(event, data) {
 

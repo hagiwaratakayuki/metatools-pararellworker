@@ -38,7 +38,7 @@ class WorkerEventDispatcher {
     }
     handleEvent(...args) {
         /**
-         * @type {import("../protocol").WorkerData}
+         * @type {import("../../protocol").WorkerData}
          */
         const workerData = { workerId: this._id, worker: this._worker };
 
