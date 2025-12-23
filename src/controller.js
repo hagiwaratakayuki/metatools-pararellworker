@@ -1,5 +1,4 @@
 const { Worker } = require('node:worker_threads')
-const { accessSync, constants: fsConstants } = require('node:fs')
 const path = require('node:path')
 
 const os = require('node:os')
@@ -164,19 +163,7 @@ class Controller {
 
             _workerPath = path.join(workerpath.base, workerpath.worker)
         }
-        if (_workerPath in CASH_WORKER_EXIST === true && CASH_WORKER_EXIST[_workerPath] !== true) {
-            throw CASH_WORKER_EXIST[_workerPath]
 
-        }
-        else {
-            try {
-                accessSync(_workerPath, fsConstants.X_OK | fsConstants.R_OK)
-            }
-            catch (error) {
-                CASH_WORKER_EXIST[_workerPath] = error
-                throw error
-            }
-        }
         const workerUrl = pathToFileURL(_workerPath)
         for (let id = 0; id < workerCount; id++) {
 
